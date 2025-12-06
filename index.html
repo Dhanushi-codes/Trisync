@@ -1,16 +1,391 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Trisync</title>
+    <title>Mental Health Support</title>
 </head>
 <body>
-    <h1>Frontend Started</h1>
+    <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mental Health Support — App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #f3f7f6;
+      --card:#ffffff;
+      --accent: #6fcf97; /* calming green */
+      --accent-2:#56c2a5;
+      --muted:#7b8a8a;
+      --danger:#e45757;
+      --glass: rgba(255,255,255,0.7);
+      --sidebar-width:260px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, 'Montserrat', sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:linear-gradient(120deg,#e8f6f3 0%, #f8fafb 40%, #eaf7ff 100%);display:flex}
 
-    <!-- progress update -->
-    <!-- progress update -->
-    <!-- progress update -->
-     <!-- update checkpoint -->
+    /* SIDEBAR */
+    .sidebar{width:var(--sidebar-width);background:linear-gradient(180deg,#ffffff, #f6fffb);padding:22px;border-right:1px solid rgba(20,20,20,0.04);display:flex;flex-direction:column;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+    h2{font-size:16px;margin:0}
+    .nav{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .nav button{background:transparent;border:0;padding:10px 12px;text-align:left;border-radius:8px;cursor:pointer;font-weight:600;color:#234;display:flex;align-items:center;gap:10px}
+    .nav button:hover{background:rgba(95,200,160,0.08)}
+    .nav .small{font-weight:500;color:var(--muted);font-size:13px}
+    .nav .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center}
 
+    /* main content */
+    .main{flex:1;padding:26px;display:flex;flex-direction:column;gap:18px}
+    .top-row{display:flex;gap:18px;align-items:flex-start}
+
+    /* card styles */
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,24,40,0.06);flex:1}
+    .wide{flex:2}
+    .mood-row{display:flex;gap:12px;align-items:center}
+    .mood-btn{background:linear-gradient(180deg,#fff,#fbfffe);border:1px solid rgba(0,0,0,0.06);padding:12px;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;width:78px}
+    .mood-emoji{font-size:28px}
+    .mood-label{font-size:13px;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .square{background:linear-gradient(180deg,#fff,#fbfffd);padding:14px;border-radius:10px;min-height:110px}
+    .square h3{margin:0 0 8px 0;font-size:14px}
+    .tip{font-size:13px;color:#213}
+
+    /* journal */
+    .journal{white-space:pre-wrap;background:linear-gradient(180deg,#fff,#fcfffd);border-radius:10px;padding:12px;border:1px dashed rgba(0,0,0,0.04);min-height:110px}
+
+    /* action box */
+    .action-list{display:flex;flex-direction:column;gap:8px}
+    .action-item{padding:10px;border-radius:8px;background:linear-gradient(180deg,#fff,#fbfffe);border:1px solid rgba(0,0,0,0.04)}
+
+    /* My Journey chart */
+    .chart-wrap{height:200px}
+
+    /* appointments modal */
+    .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--card);padding:18px;border-radius:10px;box-shadow:0 18px 50px rgba(2,8,23,0.12);width:360px;display:none;z-index:80}
+    .modal.open{display:block}
+
+    /* footer */
+    .footer{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfff7)}
+
+    /* SOS */
+    .sos{margin-top:10px;padding:12px;border-radius:10px;background:linear-gradient(90deg,#ff8a8a,#ff5f5f);color:white;text-align:center;font-weight:700;cursor:pointer}
+
+    /* small helpers */
+    .muted{color:var(--muted);font-size:13px}
+    .flex{display:flex;align-items:center;gap:10px}
+    .btn{background:var(--accent);border:0;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+
+    /* responsive */
+    @media (max-width:900px){.sidebar{display:none}.main{padding:12px}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">M</div><div>
+      <h2>MentalCare</h2>
+      <div class="small muted">Calm. Connect. Care.</div>
+    </div></div>
+
+    <nav class="nav" aria-label="main navigation">
+      <button id="nav-home"><span class="icon">🏠</span> Home</button>
+      <button id="nav-users"><span class="icon">⿡</span> Users</button>
+      <button id="nav-chats"><span class="icon">⿢</span> Chats</button>
+      <button id="nav-resources"><span class="icon">⿣</span> Resources</button>
+      <button id="nav-counsellors"><span class="icon">⿤</span> Counsellors</button>
+      <button id="nav-appointments"><span class="icon">⿥</span> Appointments</button>
+      <button id="nav-self"><span class="icon">📝</span> Self Assessment</button>
+      <button id="nav-progress"><span class="icon">📈</span> Progress</button>
+      <div style="margin-top:8px"></div>
+      <button id="nav-about"><span class="icon">ℹ️</span> About Us</button>
+      <button id="nav-contact"><span class="icon">📞</span> Contacts/Services</button>
+
+      <div style="margin-top:auto">
+        <div class="sos" id="sosBtn">SOS — Emergency Help</div>
+        <div class="muted" style="margin-top:8px;font-size:12px">Local hotlines shown when pressed</div>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="top-row">
+      <div class="card wide">
+        <h3>How was your day today?</h3>
+        <p class="muted">Select a mood that best matches how you feel right now.</p>
+        <div class="mood-row" id="moodRow">
+          <!-- moods injected by JS -->
+        </div>
+      </div>
+      <div class="card" style="width:280px">
+        <h3>Quick Actions</h3>
+        <div class="muted">Book appointment, view counsellors, or check resources</div>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn" id="openAppt">Book / Request Appointment</button>
+          <button class="btn" id="openResources" style="background:var(--accent-2)">Browse Resources</button>
+          <div class="footer" style="margin-top:10px">
+            <div>
+              <div class="muted">Progress</div>
+              <strong id="streak">0 days</strong>
+            </div>
+            <div style="width:110px;background:#eef7f4;border-radius:999px;height:12px;overflow:hidden">
+              <div id="progressBar" style="height:12px;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2))"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="square" id="tipSquare">
+        <h3>Tip of the day</h3>
+        <div class="tip" id="tipText">No mood selected yet — pick a mood to see a personalized tip.</div>
+      </div>
+
+      <div class="square" id="journalSquare">
+        <h3>Journal Entry</h3>
+        <div class="journal" id="journalText">No entries — write something today.</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn" id="writeJournal">Write New</button>
+          <button id="clearJournal">Clear</button>
+        </div>
+      </div>
+
+      <div class="square" id="actionSquare">
+        <h3>Take Action</h3>
+        <div class="action-list" id="actionList">
+          <div class="action-item">Select a mood to see suggested actions.</div>
+        </div>
+      </div>
+
+      <div class="square" id="journeySquare">
+        <h3>My Journey</h3>
+        <div class="chart-wrap"><canvas id="moodChart"></canvas></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px">
+      <div class="card" style="flex:1">
+        <h3>Emergency Numbers</h3>
+        <div class="muted">Local & national hotlines</div>
+        <ul id="emergencyList">
+          <!-- populated dynamically -->
+        </ul>
+      </div>
+
+      <div class="card" style="width:300px">
+        <h3>Recent Appointments</h3>
+        <div id="apptList" class="muted">No appointments yet.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- appointment modal -->
+  <div class="modal" id="apptModal" role="dialog" aria-modal="true">
+    <h3>Request Appointment</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+      <input id="apptName" placeholder="Your name" />
+      <input id="apptEmail" placeholder="Email" />
+      <input id="apptDate" type="date" />
+      <select id="apptType"><option>Online session</option><option>Phone call</option><option>In-person</option></select>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="saveAppt" class="btn">Send Request</button>
+        <button id="closeAppt">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // ======= Simple front-end app storing data in localStorage =======
+    const moods = [
+      {id:'happy',emoji:'😊',label:'Happy'},
+      {id:'calm',emoji:'🙂',label:'Calm'},
+      {id:'sad',emoji:'😔',label:'Sad'},
+      {id:'anxious',emoji:'😟',label:'Anxious'},
+      {id:'depressed',emoji:'😞',label:'Depressed'},
+      {id:'energetic',emoji:'🤩',label:'Energetic'}
+    ];
+
+    const moodRow = document.getElementById('moodRow');
+    const tipText = document.getElementById('tipText');
+    const actionList = document.getElementById('actionList');
+    const journalText = document.getElementById('journalText');
+
+    function createMoodButtons(){
+      moods.forEach(m=>{
+        const b = document.createElement('button');
+        b.className='mood-btn'; b.dataset.id=m.id;
+        b.innerHTML = `<div class='mood-emoji'>${m.emoji}</div><div class='mood-label'>${m.label}</div>`;
+        b.addEventListener('click',()=> onSelectMood(m.id));
+        moodRow.appendChild(b);
+      });
+    }
+
+    // tips/actions mapping
+    const tips = {
+      happy: 'Share your joy — call a friend or do a small celebratory activity.',
+      calm: 'Keep the calm: try 3 deep breaths and a 5-minute grounding exercise.',
+      sad: 'Allow yourself to feel. Try journaling for 5 minutes about what happened today.',
+      anxious: 'Try a 5-minute breathing exercise: inhale 4s, hold 4s, exhale 6s.',
+      depressed: 'Small step: stand and stretch gently. If possible, step outside for 5 minutes.',
+      energetic: 'Channel energy into movement—try a 10-minute walk or quick cardio burst.'
+    };
+
+    const actions = {
+      happy:[{title:'Share a gratitude list',link:'#'},{title:'Short dance routine',link:'#'}],
+      calm:[{title:'5-min guided breathing',link:'#'},{title:'Light stretching',link:'#'}],
+      sad:[{title:'Write a 3-line journal',link:'#'},{title:'Listen to a soothing audio',link:'#'}],
+      anxious:[{title:'3-4-5 breathing exercise',link:'#'},{title:'Progressive muscle relaxation',link:'#'}],
+      depressed:[{title:'Set one tiny goal',link:'#'},{title:'Reach out to a friend or helpline',link:'#'}],
+      energetic:[{title:'10-min walk',link:'#'},{title:'Quick HIIT routine',link:'#'}]
+    };
+
+    function onSelectMood(id){
+      // save mood with timestamp
+      const today = new Date().toISOString();
+      const store = JSON.parse(localStorage.getItem('moodLogs')||'[]');
+      store.push({id,t:today});
+      localStorage.setItem('moodLogs', JSON.stringify(store));
+
+      // update tip & actions & journal
+      tipText.textContent = tips[id] || 'Take a moment to breathe.';
+      renderActions(id);
+      // show journal (if any)
+      const journals = JSON.parse(localStorage.getItem('journals')||'{}');
+      const last = journals[new Date().toISOString().slice(0,10)];
+      journalText.textContent = last || 'No entry for today.';
+
+      updateChart(); updateProgress(); renderAppointments(); renderEmergencyList();
+    }
+
+    function renderActions(id){
+      actionList.innerHTML='';
+      const list = actions[id]||[];
+      list.forEach(it=>{
+        const el = document.createElement('div'); el.className='action-item';
+        el.innerHTML = `<strong>${it.title}</strong><div style='font-size:13px;margin-top:6px'><a href='${it.link}' target='_blank'>Open</a></div>`;
+        actionList.appendChild(el);
+      });
+    }
+
+    // journal handling
+    document.getElementById('writeJournal').addEventListener('click',()=>{
+      const todayKey = new Date().toISOString().slice(0,10);
+      const text = prompt('Write your journal entry for today:');
+      if(text!==null){
+        const journals = JSON.parse(localStorage.getItem('journals')||'{}');
+        journals[todayKey]=text;
+        localStorage.setItem('journals', JSON.stringify(journals));
+        journalText.textContent = text;
+        updateChart();
+      }
+    });
+    document.getElementById('clearJournal').addEventListener('click',()=>{
+      const todayKey = new Date().toISOString().slice(0,10);
+      const journals = JSON.parse(localStorage.getItem('journals')||'{}');
+      delete journals[todayKey];
+      localStorage.setItem('journals', JSON.stringify(journals));
+      journalText.textContent = 'No entry for today.';
+    });
+
+    // appointments modal
+    const apptModal = document.getElementById('apptModal');
+    document.getElementById('openAppt').addEventListener('click',()=> apptModal.classList.add('open'));
+    document.getElementById('closeAppt').addEventListener('click',()=> apptModal.classList.remove('open'));
+    document.getElementById('saveAppt').addEventListener('click',()=>{
+      const name = document.getElementById('apptName').value || 'Anonymous';
+      const email = document.getElementById('apptEmail').value || '';
+      const date = document.getElementById('apptDate').value || new Date().toISOString().slice(0,10);
+      const type = document.getElementById('apptType').value;
+      const appts = JSON.parse(localStorage.getItem('appts')||'[]');
+      appts.push({name,email,date,type,status:'requested'});
+      localStorage.setItem('appts', JSON.stringify(appts));
+      apptModal.classList.remove('open'); renderAppointments();
+      alert('Appointment request saved (local only).');
+    });
+
+    function renderAppointments(){
+      const appts = JSON.parse(localStorage.getItem('appts')||'[]');
+      const el = document.getElementById('apptList');
+      if(appts.length===0){ el.textContent='No appointments yet.'; return }
+      el.innerHTML='';
+      appts.slice().reverse().forEach(a=>{
+        const d = document.createElement('div'); d.style.marginBottom='8px'; d.innerHTML=`<strong>${a.date}</strong> — ${a.type} <div style='font-size:13px;color:var(--muted)'>${a.name}${a.email? ' • '+a.email : ''} • ${a.status}</div>`;
+        el.appendChild(d);
+      });
+    }
+
+    // emergency list (example numbers) — replace with local ones
+    const emergencyNumbers = [
+      {label:'National Helpline',number:'+91-9152987821'},
+      {label:'Suicide Prevention (sample)',number:'988'},
+      {label:'Local Mental Health Line',number:'+91-22-12345678'}
+    ];
+    function renderEmergencyList(){
+      const ul = document.getElementById('emergencyList'); ul.innerHTML='';
+      emergencyNumbers.forEach(it=>{ const li=document.createElement('li'); li.innerHTML=`<strong>${it.label}:</strong> ${it.number}`; ul.appendChild(li)});
+    }
+
+    // SOS button
+    document.getElementById('sosBtn').addEventListener('click',()=>{
+      let txt = emergencyNumbers.map(e=>e.label+': '+e.number).join('\n');
+      alert('Emergency numbers:\n'+txt);
+    });
+
+    // Progress & streak (simple implementation: days with a mood in last 7 days)
+    function updateProgress(){
+      const logs = JSON.parse(localStorage.getItem('moodLogs')||'[]');
+      const last7 = lastNDays(7);
+      const has = last7.map(d=> logs.some(l=> l.t.startsWith(d)) );
+      const count = has.filter(Boolean).length;
+      document.getElementById('streak').textContent = count + ' days';
+      document.getElementById('progressBar').style.width = (count/7*100)+'%';
+      // Gray emoji in sidebar if a day has no data — simple console output (could show a mini icon strip)
+    }
+    function lastNDays(n){ const res=[]; for(let i=0;i<n;i++){ const d=new Date(); d.setDate(d.getDate()-i); res.push(d.toISOString().slice(0,10)) } return res }
+
+    // Chart (My Journey) — shows counts of moods in last 30 days
+    let chart;
+    function updateChart(){
+      const logs = JSON.parse(localStorage.getItem('moodLogs')||'[]');
+      const last30 = new Date(); last30.setDate(last30.getDate()-29);
+      const counts = {};
+      moods.forEach(m=>counts[m.id]=0);
+      logs.forEach(l=>{ const d=new Date(l.t); if(d>=last30) counts[l.id] = (counts[l.id]||0)+1 });
+      const labels = moods.map(m=>m.label);
+      const data = moods.map(m=>counts[m.id]||0);
+      const ctx = document.getElementById('moodChart').getContext('2d');
+      if(chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type:'bar', data:{labels, datasets:[{label:'Mood logs (last 30 days)',data,backgroundColor:'rgba(111,207,151,0.8)'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+      });
+    }
+
+    // init
+    createMoodButtons(); renderEmergencyList(); renderAppointments(); updateProgress(); updateChart();
+
+    // small helpers: show gray emoji for missing days — create a small strip in sidebar (not visualized heavily here)
+
+    // Navigation buttons simple handlers
+    document.getElementById('nav-resources').addEventListener('click',()=> alert('Open resources — feature placeholder'));
+    document.getElementById('nav-counsellors').addEventListener('click',()=> alert('List of counsellors — feature placeholder'));
+    document.getElementById('nav-chats').addEventListener('click',()=> alert('Chat / Messaging — feature placeholder'));
+
+    // When loaded, show today's journal if available
+    (function loadTodayJournal(){
+      const journals = JSON.parse(localStorage.getItem('journals')||'{}');
+      const today = new Date().toISOString().slice(0,10);
+      journalText.textContent = journals[today] || 'No entry for today.';
+    })();
+
+    // Notes: This is a client-side demo. For a real app: integrate secure backend, auth, DB, and replace sample hotline numbers with verified local/national ones.
+  </script>
+</body>
+</html>
 
 </body>
 

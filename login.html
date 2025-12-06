@@ -1,12 +1,397 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>login</title>
-</head>
-<body>
-    <!-- Updated UI coming soon -->
+// Project: Mental Health Support — single-file project overview
+// Files included below. Create these files in a React + Vite or Create React App project.
 
-</body>
+--- README.md ---
+# Mental Health Support App
+
+A small mental-health support web app (frontend + simple backend). Frontend is a single-file React app (Tailwind CSS). Backend is a simple Express server that stores users, journals, moods and appointments in memory (for demo) and also exposes endpoints for persistent storage (replace with a proper DB for production).
+
+## Features
+- Login (demo, email/password) — after login opens the main app
+- Sidebar: Users, Resources, Counsellors, Appointments, Emergency (SOS), About, Self-Assessment, Home, My Journey
+- Mood check with 6 moods; selecting a mood shows 4 tiles: Tip of the Day, Last Journal, Take Action (with timer), My Journey (Chart.js)
+- Notebook modal for journal entries (cute aesthetic)
+- Horizontal animated marquee showing testimonials
+- Fake profiles and clickable resources
+- Simple booking UI (appointments)
+- Uses localStorage + backend endpoints
+
+## Run (dev)
+1. Frontend: Use Vite or CRA. If using Vite + React:
+   - `npm create vite@latest mh-support --template react`
+   - Replace `src/App.jsx` with `src/App.jsx` in this repo.
+   - Add Tailwind (follow Tailwind setup) or include CDN in `index.html` (included in template below).
+   - `npm install`
+   - `npm run dev`
+
+2. Backend (demo):
+   - `node server.js`
+   - API runs on port 4000 by default.
+
+--- server.js ---
+// Simple Express backend for demo purposes. Replace in-memory store with a DB in production.
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+let users = [{ id: 1, email: 'test@demo.com', password: '123456', name: 'Demo User' }];
+let journals = []; // {userId, date, mood, content}
+let moodsLog = []; // {userId, date, mood}
+let appointments = [];
+
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+  if (user) return res.json({ ok: true, user });
+  return res.status(401).json({ ok: false, message: 'Invalid credentials' });
+});
+
+app.post('/api/register', (req, res) => {
+  const { email, password, name } = req.body;
+  if (users.find(u => u.email === email)) return res.status(400).json({ ok: false, message: 'Exists' });
+  const id = users.length + 1;
+  const user = { id, email, password, name };
+  users.push(user);
+  res.json({ ok: true, user });
+});
+
+app.post('/api/journal', (req, res) => {
+  const item = req.body; // {userId, mood, content, date}
+  journals.push(item);
+  res.json({ ok: true, item });
+});
+
+app.get('/api/journals/:userId', (req, res) => {
+  const userId = Number(req.params.userId);
+  res.json(journals.filter(j => j.userId === userId));
+});
+
+app.post('/api/mood', (req, res) => {
+  moodsLog.push(req.body); // {userId, mood, date}
+  res.json({ ok: true });
+});
+
+app.get('/api/moods/:userId', (req, res) => {
+  const userId = Number(req.params.userId);
+  res.json(moodsLog.filter(m => m.userId === userId));
+});
+
+app.post('/api/appointments', (req, res) => {
+  const appt = { id: appointments.length + 1, ...req.body };
+  appointments.push(appt);
+  res.json({ ok: true, appt });
+});
+
+app.get('/api/appointments/:userId', (req, res) => {
+  const userId = Number(req.params.userId);
+  res.json(appointments.filter(a => a.userId === userId));
+});
+
+app.listen(4000, () => console.log('API running on http://localhost:4000'));
+
+--- index.html (frontend entry) ---
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mental Health Support</title>
+    <!-- Tailwind CDN for quick demo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
+
+--- src/main.jsx ---
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
+createRoot(document.getElementById('root')).render(<App />)
+
+--- src/App.jsx ---
+import React, { useEffect, useState, useRef } from 'react'
+
+// Simple helper to call backend; fallback to localStorage when backend not present
+const API_BASE = 'http://localhost:4000/api'
+
+function callApi(path, opts = {}) {
+  return fetch(API_BASE + path, { headers: { 'Content-Type': 'application/json' }, ...opts })
+    .then(r => r.ok ? r.json() : Promise.reject(r))
+    .catch(_ => null) // ignore errors for demo (will try localStorage fallback)
+}
+
+const moods = [
+  { key: 'happy', label: 'Happy', emoji: '😊' },
+  { key: 'calm', label: 'Calm', emoji: '😌' },
+  { key: 'anxious', label: 'Anxious', emoji: '😰' },
+  { key: 'sad', label: 'Sad', emoji: '😢' },
+  { key: 'angry', label: 'Angry', emoji: '😡' },
+  { key: 'depressed', label: 'Depressed', emoji: '😞' }
+]
+
+export default function App() {
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('mh_user')))
+  const [view, setView] = useState('home')
+  const [selectedMood, setSelectedMood] = useState(null)
+  const [journals, setJournals] = useState([])
+  const [moodLogs, setMoodLogs] = useState([])
+  const [showJournal, setShowJournal] = useState(false)
+  const [testimonialPos, setTestimonialPos] = useState(0)
+  const chartRef = useRef(null)
+
+  useEffect(() => {
+    if (user) loadUserData(user.id)
+  }, [user])
+
+  async function loadUserData(userId) {
+    const j = await callApi(`/journals/${userId}`) || JSON.parse(localStorage.getItem('mh_journals') || '[]')
+    const m = await callApi(`/moods/${userId}`) || JSON.parse(localStorage.getItem('mh_moods') || '[]')
+    setJournals(j)
+    setMoodLogs(m)
+  }
+
+  function loginDemo() {
+    const demo = { id: 1, name: 'Demo User', email: 'test@demo.com' }
+    setUser(demo)
+    localStorage.setItem('mh_user', JSON.stringify(demo))
+    loadUserData(demo.id)
+  }
+
+  function logout() {
+    localStorage.removeItem('mh_user')
+    setUser(null)
+  }
+
+  function selectMood(m) {
+    setSelectedMood(m)
+    const entry = { userId: user?.id || 0, mood: m.key, date: new Date().toISOString() }
+    // send to backend
+    fetch(API_BASE + '/mood', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(entry)})
+      .catch(()=>{
+        const stored = JSON.parse(localStorage.getItem('mh_moods')||'[]');
+        stored.push(entry); localStorage.setItem('mh_moods', JSON.stringify(stored))
+      })
+    setMoodLogs(prev => [...prev, entry])
+  }
+
+  function saveJournal(content) {
+    const item = { userId: user?.id || 0, date: new Date().toISOString(), mood: selectedMood?.key, content }
+    fetch(API_BASE + '/journal', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(item)})
+      .catch(()=>{
+        const stored = JSON.parse(localStorage.getItem('mh_journals')||'[]'); stored.push(item); localStorage.setItem('mh_journals', JSON.stringify(stored))
+      })
+    setJournals(prev => [item, ...prev])
+    setShowJournal(false)
+  }
+
+  useEffect(()=>{
+    // animate testimonials left-right
+    const t = setInterval(()=> setTestimonialPos(p => (p+1) % 1000), 2000)
+    return ()=>clearInterval(t)
+  },[])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50">
+      {!user ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="bg-white shadow-xl rounded-lg p-8 w-96">
+            <h2 className="text-2xl font-bold mb-4">Welcome — Mental Health Support</h2>
+            <p className="text-sm mb-4">Demo login for preview</p>
+            <button onClick={loginDemo} className="w-full py-2 rounded-md bg-indigo-600 text-white">Login Demo</button>
+            <button onClick={()=>alert('Register demo not implemented')} className="w-full mt-2 py-2 rounded-md border">Register</button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-screen">
+          <aside className="w-72 bg-white/80 backdrop-blur-md p-4 border-r">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="rounded-full bg-indigo-200 w-12 h-12 flex items-center justify-center text-xl">{user.name[0]}</div>
+              <div>
+                <div className="font-semibold">{user.name}</div>
+                <div className="text-xs text-gray-500">{user.email}</div>
+              </div>
+            </div>
+            <nav className="space-y-2">
+              {['home','users','resources','counsellors','appointments','self-assess','about'].map(v=> (
+                <button key={v} onClick={()=>setView(v)} className={`w-full text-left px-3 py-2 rounded ${view===v? 'bg-indigo-100':''}`}>{v.replace('-',' ')} </button>
+              ))}
+            </nav>
+            <div className="mt-6">
+              <button className="w-full py-2 rounded bg-red-500 text-white" onClick={()=>alert('Call local emergency: Tele MANAS 14416')}>SOS — Call Hotline</button>
+            </div>
+            <div className="mt-4 text-xs text-gray-500">
+              <div>Tele MANAS: 14416</div>
+              <div>NIMHANS Helpline, Vandrevala</div>
+            </div>
+            <div className="mt-6">
+              <button onClick={logout} className="text-sm text-gray-600 underline">Logout</button>
+            </div>
+          </aside>
+
+          <main className="flex-1 p-6 overflow-auto">
+            <header className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold">How was your day today?</h1>
+              <div className="text-sm text-gray-500">Welcome back, {user.name}</div>
+            </header>
+
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="col-span-2 bg-white p-4 rounded-lg shadow">
+                <div className="flex gap-3">
+                  {moods.map(m=> (
+                    <button key={m.key} onClick={()=>selectMood(m)} className={`p-3 rounded-lg flex-1 border ${selectedMood?.key===m.key ? 'bg-yellow-100':''}`}>
+                      <div className="text-2xl">{m.emoji}</div>
+                      <div className="text-sm">{m.label}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedMood && (
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Tile title="Tip of the Day" content={tipForMood(selectedMood.key)} />
+                    <Tile title="Last Journal" content={journals.length ? journals[0].content : 'No entries yet'} onOpen={()=>setShowJournal(true)} />
+                    <TakeAction mood={selectedMood.key} />
+                    <MyJourney moodLogs={moodLogs} chartRef={chartRef} />
+                  </div>
+                )}
+              </div>
+
+              <aside className="bg-white p-4 rounded-lg shadow">
+                <h3 className="font-semibold mb-2">Quick Actions</h3>
+                <button onClick={()=>setShowJournal(true)} className="w-full text-left p-2 rounded border mb-2">Write Journal</button>
+                <button onClick={()=>setView('resources')} className="w-full text-left p-2 rounded border mb-2">Resources</button>
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold mb-1">Progress this week</h4>
+                  <div className="w-full h-3 bg-gray-200 rounded overflow-hidden">
+                    <div className="h-3 rounded bg-indigo-500" style={{width: `${Math.min(100, moodLogs.length*10)}%`}} />
+                  </div>
+                </div>
+              </aside>
+            </section>
+
+            <section className="mt-6">
+              <h3 className="font-semibold mb-2">Testimonials</h3>
+              <div className="relative overflow-hidden h-14 bg-white rounded p-3">
+                <div style={{position:'absolute', left: -testimonialPos}} className="whitespace-nowrap">"This website saved me" — A. Sharma</div>
+                <div style={{position:'absolute', right: -testimonialPos}} className="whitespace-nowrap">"I learned breathing exercises" — Rohit</div>
+              </div>
+            </section>
+
+          </main>
+        </div>
+      )}
+
+      {showJournal && (
+        <JournalModal onClose={()=>setShowJournal(false)} onSave={saveJournal} mood={selectedMood} />
+      )}
+    </div>
+  )
+}
+
+function tipForMood(key){
+  switch(key){
+    case 'sad': return 'Try 5 minutes of grounding: name 5 things you can see, 4 you can touch, 3 you can hear.'
+    case 'anxious': return 'Try paced breathing: 4s inhale, 4s hold, 6s exhale for 5 minutes.'
+    case 'depressed': return 'Small win: make your bed, drink a glass of water. Celebrate small steps.'
+    case 'happy': return 'Great! Share your joy — call a friend or take a quick walk.'
+    case 'calm': return 'Keep it up — a 10-minute mindful stretch helps retention.'
+    case 'angry': return 'Try a quick physical release: 3 minutes of brisk walking.'
+    default: return 'Be kind to yourself today.'
+  }
+}
+
+function Tile({title, content, onOpen}){
+  return (
+    <div className="bg-gradient-to-br from-white to-gray-50 p-4 rounded-lg shadow flex flex-col justify-between">
+      <div>
+        <div className="font-semibold mb-2">{title}</div>
+        <div className="text-sm text-gray-700">{content}</div>
+      </div>
+      {onOpen && <button onClick={onOpen} className="mt-3 self-end text-indigo-600 underline">Open</button>}
+    </div>
+  )
+}
+
+function TakeAction({mood}){
+  const [running, setRunning] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(0)
+  useEffect(()=>{
+    if (!running) return;
+    const t = setInterval(()=> setTimeLeft(s => s>0 ? s-1 : (clearInterval(t),0)), 1000)
+    return ()=>clearInterval(t)
+  },[running])
+
+  function startTimer(seconds){ setTimeLeft(seconds); setRunning(true) }
+
+  const content = mood==='anxious' ? '5-min breathing' : mood==='happy' ? '10-min walk' : 'CBT thought record prompt'
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <div className="font-semibold">Take Action</div>
+      <div className="text-sm mt-2">{content}</div>
+      <div className="mt-3 flex gap-2">
+        <button onClick={()=>startTimer(300)} className="px-3 py-1 rounded border">Start 5m</button>
+        <button onClick={()=>startTimer(600)} className="px-3 py-1 rounded border">Start 10m</button>
+      </div>
+      {running && <div className="mt-3 font-mono">Time left: {Math.max(0,timeLeft)}s</div>}
+    </div>
+  )
+}
+
+function MyJourney({moodLogs, chartRef}){
+  useEffect(()=>{
+    const ctx = chartRef.current && chartRef.current.getContext('2d')
+    if (!ctx) return;
+    const counts = moodLogs.reduce((acc, m)=> (acc[m.mood] = (acc[m.mood]||0)+1, acc), {})
+    const labels = Object.keys(counts)
+    const values = labels.map(l=>counts[l])
+    // draw a simple bar chart using Chart.js (assumes chart.js global)
+    new window.Chart(chartRef.current, {type:'bar', data:{labels, datasets:[{label:'mood counts', data:values}]}})
+  },[moodLogs])
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <div className="font-semibold mb-2">My Journey</div>
+      <canvas ref={chartRef} />
+    </div>
+  )
+}
+
+function JournalModal({onClose, onSave, mood}){
+  const [text, setText] = useState('')
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/30">
+      <div className="bg-amber-50 rounded-2xl shadow-xl w-11/12 max-w-xl p-6" style={{fontFamily:'"Comic Sans MS", cursive'}}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold">Notebook</h3>
+          <button onClick={onClose} className="text-gray-600">Close</button>
+        </div>
+        <div className="mb-4">
+          <div className="bg-white p-3 rounded-md h-48 overflow-auto" contentEditable onInput={(e)=>setText(e.currentTarget.textContent)}>
+            {text || 'Write your thoughts...'}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={()=>{ onSave(text || ''); }} className="px-4 py-2 bg-indigo-600 text-white rounded">Save</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+--- NOTES ---
+This single-file example is a demo scaffold — for production:
+- Replace in-memory backend with a database (Postgres, MongoDB)
+- Add authentication (JWT, sessions, password hashing)
+- Add input validation and proper error handling
+- Host backend with HTTPS and secure CORS
+- For user images and avatars store on S3 or similar
+
+Enjoy! Reply if you want me to customize colors, add real DB code, or export a ZIP.
